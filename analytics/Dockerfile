@@ -11,4 +11,10 @@ COPY . .
 
 EXPOSE 5153
 
+ENV DB_USERNAME=myuser
+ENV DB_PASSWORD=mypassword
+ENV DB_HOST=postgresql-service
+ENV DB_PORT=5432
+ENV DB_NAME=mydatabase 
+
 CMD [ "python", "./app.py" ]
