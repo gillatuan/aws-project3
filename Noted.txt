@@ -1,0 +1,72 @@
+Install eksctl https://github.com/eksctl-io/eksctl/releases/tag/v0.177.0-rc.0
+eksctl create cluster --name my-cluster --region us-east-1 --nodegroup-name my-nodes --node-type t3.small --nodes 1 --nodes-min 1 --nodes-max 2
+aws eks --region us-east-1 update-kubeconfig --name my-cluster
+#kubectl config current-context
+#kubectl config view
+#eksctl delete cluster --name my-cluster --region us-east-1
+
+cd deployment-local
+kubectl apply -f pvc.yaml
+kubectl apply -f pv.yaml
+kubectl apply -f postgresql-deployment.yaml
+kubectl apply -f postgresql-service.yaml
+kubectl get pods >> Finding postgresql-xxx pods
+#kubectl exec -it postgresql-6889d46b98-qjbzm -- bash
+kubectl port-forward svc/postgresql-service 5433:5432 &
+kubectl port-forward --namespace default svc/postgresql-service 5433:5432 &
+export POSTGRES_PASSWORD=$(kubectl get secret --namespace default postgresql-service -o jsonpath="{.data.postgres-password}" | base64 -d)
+psql --host 127.0.0.1 -U myuser -d mydatabase -p 5433 < 1_create_tables.sql
+psql --host 127.0.0.1 -U myuser -d mydatabase -p 5433 < 2_seed_users.sql
+psql --host 127.0.0.1 -U myuser -d mydatabase -p 5433 < 3_seed_tokens.sql
+psql --host 127.0.0.1 -U myuser -d mydatabase -p 5432
+ps aux | grep 'kubectl port-forward' | grep -v grep | awk '{print $2}' | xargs -r kill
+setx DB_USERNAME=myuser
+setx POSTGRES_PASSWORD=mypassword
+select *from users;
+select* from tokens;
+
+
+#kubectl get secret project3-secret -o jsonpath="deployment\secret.yaml" | base64 -d
+#kubectl get svc
+cd ..
+cd deployment
+kubectl apply -f configmap.yaml
+kubectl apply -f coworking.yaml
+
+kubectl get services
+kubectl get pods
+
+#add cloudwatch
+Get eksctl-my-cluster-nodegroup-my-nod-NodeInstanceRole-iQj9N5LHGLqw from web console > compute > node group > Role
+aws iam attach-role-policy --role-name eksctl-my-cluster-nodegroup-my-nod-NodeInstanceRole-iQj9N5LHGLqw --policy-arn arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+aws eks create-addon --addon-name amazon-cloudwatch-observability --cluster-name my-cluster
+
+//check
+kubectl get svc
+kubectl describe svc postgresql-service
+
+http://192.168.1.17:5153/api/reports/daily_usage
+http://192.168.1.17:5153/api/reports/user_visits
+
+
+///
+kubectl get svc
+
+
+kubectl describe pod coworking-6d6c9845d6-5blbt 
+kubectl delete pod coworking-6d6c9845d6-5blbt
+kubectl get services
+kubectl get pods
+kubectl logs coworking-6d6c9845d6-xrmr9
+kubectl delete service coworking 
+
+http://192.168.1.17:5153/api/reports/daily_usage
+http://192.168.1.17:5153/api/reports/user_visits
+
+set DB_USERNAME=myuser
+set DB_PASSWORD=%POSTGRES_PASSWORD%
+set DB_HOST=127.0.0.1
+set DB_PORT=5433
+set DB_NAME=mydatabase
+
+aws eks create-addon --addon-name amazon-cloudwatch-observability --cluster-name my-cluster
